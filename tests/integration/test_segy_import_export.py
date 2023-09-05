@@ -139,6 +139,74 @@ class TestImport4D:
         assert grid.select_dim("sample") == samples_exp
 
 
+@pytest.mark.parametrize("header_locations", [(17, 137, 13)])
+@pytest.mark.parametrize("header_names", [("shot_point", "cable", "channel")])
+@pytest.mark.parametrize("header_types", [("int32", "int16", "int32")])
+@pytest.mark.parametrize("endian", ["big"])
+@pytest.mark.parametrize(
+    "grid_overrides",
+    [
+        None,
+    ],
+)
+@pytest.mark.parametrize(
+    "chan_header_type",
+    [
+        StreamerShotGeometryType.A,
+    ],
+)
+class TestImport6Das4D:
+    """Test for 6D segy as 4D with defaults."""
+
+    def test_import_4d_segy(
+        self,
+        segy_mock_6d_as_4d_shots,
+        zarr_tmp,
+        header_locations,
+        header_names,
+        header_types,
+        endian,
+        grid_overrides,
+        chan_header_type,
+    ):
+        """Test importing a SEG-Y file to MDIO."""
+        _header_names = header_names
+        segy_path = segy_mock_6d_as_4d_shots[chan_header_type]
+
+        segy_to_mdio(
+            segy_path=segy_path,
+            mdio_path_or_buffer=zarr_tmp.__str__(),
+            index_bytes=header_locations,
+            index_names=_header_names,
+            index_types=header_types,
+            chunksize=(8, 2, 128, 1024),
+            overwrite=True,
+            endian=endian,
+            grid_overrides=grid_overrides,
+        )
+
+        # Expected values
+        num_samples = 25
+        shots = [2, 3, 5]
+        cables = [0, 101, 201, 301]
+        receivers_per_cable = [1, 5, 7, 5]
+
+        # QC mdio output
+        mdio = MDIOReader(zarr_tmp.__str__(), access_pattern="0123")
+        assert mdio.binary_header["Samples"] == num_samples
+        grid = mdio.grid
+
+        assert grid.select_dim(header_names[0]) == Dimension(shots, header_names[0])
+        assert grid.select_dim(header_names[1]) == Dimension(cables, header_names[1])
+
+        assert grid.select_dim(header_names[2]) == Dimension(
+            range(1, np.amax(receivers_per_cable) + 1), header_names[2]
+        )
+
+        samples_exp = Dimension(range(0, num_samples, 1), "sample")
+        assert grid.select_dim("sample") == samples_exp
+
+
 @pytest.mark.parametrize("header_locations", [(17, 13)])
 @pytest.mark.parametrize("header_names", [("inline", "crossline")])
 @pytest.mark.parametrize("endian", ["big"])
