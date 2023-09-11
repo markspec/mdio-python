@@ -18,10 +18,10 @@ def create_segy_mock_6d(
     shots: list,
     cables: list,
     receivers_per_cable: list,
-    shot_lines: list[int] = [
+    shot_lines: list = [  # noqa:  B006
         1,
     ],
-    comp_types: list[int] = [
+    comp_types: list = [  # noqa:  B006
         1,
     ],
     chan_header_type: StreamerShotGeometryType = StreamerShotGeometryType.A,
@@ -153,8 +153,10 @@ def segy_mock_6d_as_4d_shots(fake_segy_tmp: str) -> dict[str, str]:
 
     segy_paths = {}
 
-    type_list = [StreamerShotGeometryType.A,]
-    #for chan_header_type in StreamerShotGeometryType:
+    type_list = [
+        StreamerShotGeometryType.A,
+    ]
+    # for chan_header_type in StreamerShotGeometryType:
     for chan_header_type in type_list:
         segy_paths[chan_header_type] = create_segy_mock_6d(
             fake_segy_tmp,
@@ -178,8 +180,10 @@ def segy_mock_6d_as_5d_shots(fake_segy_tmp: str) -> dict[str, str]:
     shot_lines = [1, 2, 4, 5, 99]
     segy_paths = {}
 
-    type_list = [StreamerShotGeometryType.A,]
-    #for chan_header_type in StreamerShotGeometryType:
+    type_list = [
+        StreamerShotGeometryType.A,
+    ]
+    # for chan_header_type in StreamerShotGeometryType:
     for chan_header_type in type_list:
         segy_paths[chan_header_type] = create_segy_mock_6d(
             fake_segy_tmp,
@@ -205,8 +209,10 @@ def segy_mock_6d_shots(fake_segy_tmp: str) -> dict[str, str]:
     comp_types = [1, 2, 3, 4]
     segy_paths = {}
 
-    type_list = [StreamerShotGeometryType.A,]
-    #for chan_header_type in StreamerShotGeometryType:
+    type_list = [
+        StreamerShotGeometryType.A,
+    ]
+    # for chan_header_type in StreamerShotGeometryType:
     for chan_header_type in type_list:
         segy_paths[chan_header_type] = create_segy_mock_6d(
             fake_segy_tmp,

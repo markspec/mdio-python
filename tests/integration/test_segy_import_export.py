@@ -354,3 +354,159 @@ class TestExport:
         assert in_binary == out_binary
         assert in_trc_hdrs == out_trc_hdrs
         npt.assert_array_equal(in_traces, out_traces)
+
+
+@pytest.mark.parametrize("header_locations", [(133, 17, 137, 13)])
+@pytest.mark.parametrize(
+    "header_names", [("shot_line", "shot_point", "cable", "channel")]
+)
+@pytest.mark.parametrize("header_types", [("int16", "int32", "int16", "int32")])
+@pytest.mark.parametrize("endian", ["big"])
+@pytest.mark.parametrize(
+    "grid_overrides",
+    [
+        None,
+    ],
+)
+@pytest.mark.parametrize(
+    "chan_header_type",
+    [
+        StreamerShotGeometryType.A,
+    ],
+)
+class TestSegy5D:
+    """Test for 6D segy as 5D with defaults."""
+
+    def test_import_5d_segy(
+        self,
+        segy_mock_6d_as_5d_shots,
+        zarr_tmp,
+        header_locations,
+        header_names,
+        header_types,
+        endian,
+        grid_overrides,
+        chan_header_type,
+    ):
+        """Test importing a SEG-Y file to MDIO."""
+        _header_names = header_names
+        segy_path = segy_mock_6d_as_5d_shots[chan_header_type]
+
+        segy_to_mdio(
+            segy_path=segy_path,
+            mdio_path_or_buffer=zarr_tmp.__str__(),
+            index_bytes=header_locations,
+            index_names=_header_names,
+            index_types=header_types,
+            chunksize=(2, 4, 2, 128, 1024),
+            overwrite=True,
+            endian=endian,
+            grid_overrides=grid_overrides,
+        )
+
+        # Expected values
+        num_samples = 25
+        shots = [2, 3, 5]
+        cables = [0, 101, 201, 301]
+        receivers_per_cable = [1, 5, 7, 5]
+        shot_lines = [1, 2, 4, 5, 99]
+
+        # QC mdio output
+        mdio = MDIOReader(zarr_tmp.__str__(), access_pattern="01234")
+        assert mdio.binary_header["Samples"] == num_samples
+        grid = mdio.grid
+
+        assert grid.select_dim(header_names[0]) == Dimension(
+            shot_lines, header_names[0]
+        )
+        assert grid.select_dim(header_names[1]) == Dimension(shots, header_names[1])
+        assert grid.select_dim(header_names[2]) == Dimension(cables, header_names[2])
+
+        assert grid.select_dim(header_names[3]) == Dimension(
+            range(1, np.amax(receivers_per_cable) + 1), header_names[3]
+        )
+
+        samples_exp = Dimension(range(0, num_samples, 1), "sample")
+        assert grid.select_dim("sample") == samples_exp
+
+
+@pytest.mark.parametrize("header_locations", [(141, 133, 17, 137, 13)])
+@pytest.mark.parametrize(
+    "header_names", [("comptype", "shot_line", "shot_point", "cable", "channel")]
+)
+@pytest.mark.parametrize(
+    "header_types", [("int16", "int16", "int32", "int16", "int32")]
+)
+@pytest.mark.parametrize("endian", ["big"])
+@pytest.mark.parametrize(
+    "grid_overrides",
+    [
+        None,
+    ],
+)
+@pytest.mark.parametrize(
+    "chan_header_type",
+    [
+        StreamerShotGeometryType.A,
+    ],
+)
+class TestSegy6D:
+    """Test for 6D segy as 5D with defaults."""
+
+    def test_import_6d_segy(
+        self,
+        segy_mock_6d_shots,
+        zarr_tmp,
+        header_locations,
+        header_names,
+        header_types,
+        endian,
+        grid_overrides,
+        chan_header_type,
+    ):
+        """Test importing a SEG-Y file to MDIO."""
+        _header_names = header_names
+        segy_path = segy_mock_6d_shots[chan_header_type]
+
+        segy_to_mdio(
+            segy_path=segy_path,
+            mdio_path_or_buffer=zarr_tmp.__str__(),
+            index_bytes=header_locations,
+            index_names=_header_names,
+            index_types=header_types,
+            chunksize=(1, 2, 4, 2, 128, 1024),
+            overwrite=True,
+            endian=endian,
+            grid_overrides=grid_overrides,
+        )
+
+        access_pattern = "012345"
+
+        # Expected values
+        num_samples = 25
+        shots = [2, 3, 5]
+        cables = [0, 101, 201, 301]
+        receivers_per_cable = [1, 5, 7, 5]
+        shot_lines = [1, 2, 4, 5, 99]
+        comp_types = [1, 2, 3, 4]
+
+        # QC mdio output
+        mdio = MDIOReader(zarr_tmp.__str__(), access_pattern=access_pattern)
+        assert mdio.binary_header["Samples"] == num_samples
+        grid = mdio.grid
+
+        assert grid.select_dim(header_names[0]) == Dimension(
+            comp_types, header_names[0]
+        )
+        assert grid.select_dim(header_names[1]) == Dimension(
+            shot_lines, header_names[1]
+        )
+        assert grid.select_dim(header_names[2]) == Dimension(shots, header_names[2])
+        assert grid.select_dim(header_names[3]) == Dimension(cables, header_names[3])
+
+        assert grid.select_dim(header_names[4]) == Dimension(
+            range(1, np.amax(receivers_per_cable) + 1), header_names[4]
+        )
+
+        samples_exp = Dimension(range(0, num_samples, 1), "sample")
+        assert grid.select_dim("sample") == samples_exp
