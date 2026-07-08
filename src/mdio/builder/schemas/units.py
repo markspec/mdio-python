@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from enum import unique
 
 from pydantic import Field
@@ -12,7 +12,7 @@ from mdio.builder.schemas.core import CamelCaseStrictModel
 
 
 @unique
-class UnitEnum(str, Enum):
+class UnitEnum(StrEnum):
     """An Enum representing units as strings, from pint."""
 
 
